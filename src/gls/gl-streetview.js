@@ -26,5 +26,25 @@ goog.inherits(gls.GlStreetview, ngu.Directive);
  * @override
  */
 gls.GlStreetview.prototype.link = function ($scope, $element, $attrs) {
-  $element.append('<div>Hello</div>');
+  if (!gls.StreetviewControl) {
+    $element.append('<div>WebGL not supported</div>');
+    return;
+  }
+  var ctrl = new gls.StreetviewControl({
+    'element': $element[0],
+    'width': 1024,
+    'height': 512,
+    'quality': 3,
+    'location': {'lat':42.337692, 'lng':-71.144215},
+    'texturePlaceholderUrl': $attrs['glsPlaceholder'],
+    'markerModel': $scope['marker']
+  });
+  ctrl.run();
+  ctrl.addMarker({lat: 42.338464, lng:-71.144399});
+};
+
+gls.GlStreetview['options'] = {
+  'scope': {
+    'marker': '=glsMarker'
+  }
 };

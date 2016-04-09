@@ -279,7 +279,14 @@ var THREE = {
     "yellow": {},
     "yellowgreen": {}
   },
-  "Quaternion": function () {},
+  /**
+   * @param x
+   * @param y
+   * @param z
+   * @param w
+   * @constructor
+   */
+  "Quaternion": function ( x, y, z, w ) {},
   "Vector2": function () {},
   /**
    * @param x
@@ -289,7 +296,15 @@ var THREE = {
    */
   "Vector3": function ( x, y, z ) {},
   "Vector4": function () {},
-  "Euler": function () {},
+
+  /**
+   * @param x
+   * @param y
+   * @param z
+   * @param order
+   * @constructor
+   */
+  "Euler": function ( x, y, z, order ) {},
   "Line3": function () {},
   "Box2": function () {},
   "Box3": function () {},
@@ -451,6 +466,9 @@ var THREE = {
   "BinaryTextureLoader": function () {},
   "DataTextureLoader": function () {},
   "CompressedTextureLoader": function () {},
+  /**
+   * @constructor
+   */
   "Material": function () {},
   "MaterialIdCount": {},
   "LineBasicMaterial": function () {},
@@ -459,6 +477,9 @@ var THREE = {
    * @constructor
    */
   "MeshBasicMaterial": function () {},
+  /**
+   * @constructor
+   */
   "MeshLambertMaterial": function () {},
   "MeshPhongMaterial": function () {},
   "MeshStandardMaterial": function () {},
@@ -469,7 +490,19 @@ var THREE = {
   "ShaderMaterial": function () {},
   "RawShaderMaterial": function () {},
   "SpriteMaterial": function () {},
-  "Texture": function () {},
+  /**
+   * @param image
+   * @param mapping
+   * @param wrapS
+   * @param wrapT
+   * @param magFilter
+   * @param minFilter
+   * @param format
+   * @param type
+   * @param anisotropy
+   * @constructor
+   */
+  "Texture": function ( image, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy ) {},
   "TextureIdCount": {},
   "CanvasTexture": function () {},
   "CubeTexture": function () {},
@@ -3281,6 +3314,10 @@ var THREE = {
   "VRControls": function (object, callback) {}
 };
 
+THREE.Vector3.prototype.x = 0;
+THREE.Vector3.prototype.y = 0;
+THREE.Vector3.prototype.z = 0;
+
 /**
  * @type {THREE.Vector3}
  */
@@ -3288,13 +3325,73 @@ THREE.Camera.prototype.target = null;
 
 THREE.Scene.prototype.add = function() {};
 
+THREE.Euler.prototype.setFromQuaternion = function () {};
+THREE.Euler.prototype.x = 0;
+THREE.Euler.prototype.y = 0;
+THREE.Euler.prototype.z = 0;
+
+THREE.Quaternion.prototype.setFromEuler = function ( euler, update ) {};
+
+THREE.Material.prototype.wireframe = false;
+/**
+ * @type {THREE.Texture}
+ */
+THREE.Material.prototype.map = null;
+
+THREE.Texture.prototype.needsUpdate = false;
+
 THREE.Mesh.prototype.type = '';
+THREE.Mesh.prototype.visible = true;
+
+/**
+ * @type {THREE.Vector3}
+ */
+THREE.Mesh.prototype.position = null;
+
+/**
+ * @type {THREE.Vector3}
+ */
+THREE.Mesh.prototype.scale = null;
+
+/**
+ * @type {THREE.Vector3}
+ */
+THREE.Mesh.prototype.rotation = null;
 
 /**
  * @type {THREE.Geometry}
  */
 THREE.Mesh.prototype.geometry = null;
+
+/**
+ * @type {THREE.Material}
+ */
 THREE.Mesh.prototype.material = null;
 THREE.Mesh.prototype.drawMode = null;
 
+/**
+ * @type {THREE.Quaternion}
+ */
+THREE.Mesh.prototype.quaternion = null;
+
 THREE.Geometry.prototype.dynamic = true;
+THREE.Geometry.prototype.computeVertexNormals = function() {};
+THREE.Geometry.prototype.mergeVertices = function() {};
+
+THREE.CSS3DRenderer.prototype.render = function(scene, camera) {};
+
+THREE.WebGLRenderer.prototype.autoClearColor = true;
+
+/**
+ * @type {HTMLElement}
+ */
+THREE.WebGLRenderer.prototype.domElement = null;
+
+/**
+ * @param width
+ * @param height
+ */
+THREE.WebGLRenderer.prototype.setSize = function(width, height) {};
+THREE.WebGLRenderer.prototype.render = function ( scene, camera ) {};
+
+THREE.VRControls.prototype.update = function() {};

@@ -7,23 +7,6 @@
   <script src="../bower_components/jquery/dist/jquery.js"></script>
   <script src="../bower_components/angular/angular.js"></script>
 
-  <script src="../bower_components/oculus-streetview/js/GSVPano_o.js"></script>
-  <script src="../bower_components/GSVPanoDepth/src/GSVPanoDepth.js"></script>
-
-  <script src="../bower_components/threejs/build/three.js"></script>
-
-  <!-- For 3d marker; TODO: Also try an SVG marker and get rid of this library -->
-  <script src="../bower_components/threejs/examples/js/loaders/STLLoader.js"></script>
-
-  <!-- For loading html elements on the scene -->
-  <script src="../bower_components/threejs/examples/js/renderers/CSS3DRenderer.js"></script>
-
-  <!-- For updating the scene based on mouse, keyboard and device orientation -->
-  <script src="../bower_components/threejs/examples/js/controls/VRControls.js"></script>
-
-  <!-- Even though it's called a polyfill, this does all the work! TODO: But whenever available, we should use the actual VR manager. -->
-  <script src="../bower_components/webvr-polyfill/build/webvr-polyfill.js"></script>
-
   <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.22"></script>
 
   <script src="../bower_components/google-closure-library/closure/goog/base.js"></script>
@@ -31,12 +14,66 @@
   <script src="../bower_components/utils.js/utils.js"></script>
   <script src="../bower_components/ng-utils/ng-utils.js"></script>
 
+  <script src="../lib/modernizr-3.3.1-webgl.js"></script>
+
   <script src="../src/gls/gl-streetview.js"></script>
   <script src="../src/gls/gls.js"></script>
 
-  <script type="text/javascript" src="script.js"></script>
+  <script src="main.js"></script>
 </head>
-<body ng-app="ng-gl-streetview-test">
-  <div gl-streetview></div>
+<body ng-app="ng-gl-streetview-test" ng-controller="myController">
+  <div gl-streetview gls-placeholder="placeholder.png" gls-marker="marker"
+       ng-if="glStreetviewLoaded"></div>
+
+  <script type="text/javascript">
+    /*function downloadGlStreetview() {
+      var scripts;
+
+      if (Modernizr.webgl) {
+        scripts = [
+          'bower_components/threejs/build/three.js',
+          'bower_components/oculus-streetview/js/GSVPano_o.js',
+          'bower_components/GSVPanoDepth/src/GSVPanoDepth.js',
+
+          // For 3d marker; TODO: Also try an SVG marker and get rid of this library
+          'bower_components/threejs/examples/js/loaders/STLLoader.js',
+
+          // For loading html elements on the scene
+          'bower_components/threejs/examples/js/renderers/CSS3DRenderer.js',
+
+          // For updating the scene based on mouse, keyboard and device orientation
+          'bower_components/threejs/examples/js/controls/VRControls.js',
+
+          // Even though it's called a polyfill, this does all the work! TODO: But whenever available, we should use the actual VR manager.
+          'bower_components/webvr-polyfill/build/webvr-polyfill.js',
+
+          'test/script.js'
+        ];
+      } else {
+        scripts = [
+          'test/script-nowebgl.js'
+        ];
+      }
+
+      scripts.map(function(src) { return '../' + src; }).forEach(function(src, i) {
+        var script = document.createElement('script');
+        script.src = src;
+        script.async = false; // this is so they execute in order
+
+        if (i == scripts.length - 1) {
+          script.onload =
+        }
+
+        document.head.appendChild(script);
+      });
+    }
+    if (window.addEventListener) {
+      window.addEventListener('load', downloadGlStreetview, false);
+    } else if (window.attachEvent) {
+      window.attachEvent('onload', downloadGlStreetview);
+    } else {
+      window.onload = downloadGlStreetview;
+    }*/
+  </script>
 </body>
 </html>

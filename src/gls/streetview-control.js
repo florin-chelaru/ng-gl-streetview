@@ -7,7 +7,9 @@
 goog.provide('gls.StreetviewControl');
 
 /**
- * @param {{width: number, height: number, quality: number, location: {lat:number, lng:number}, texturePlaceholderUrl: string}} [options]
+ * @param {{element: HTMLElement, width: number, height: number, quality: number, location: {lat:number, lng:number}, texturePlaceholderUrl: string,
+ * markerModel: {url:string, scale:{x:number,y:number,z:number}, rotation:{x:number,y:number,z:number}}
+ * }} [options]
  * @constructor
  */
 gls.StreetviewControl = function(options) {
@@ -32,13 +34,28 @@ gls.StreetviewControl = function(options) {
    */
   this._fov = 60;
 
+  /**
+   * Used to map distances in meters to distances within the GL projection sphere.
+   * @const {number}
+   * @private
+   */
+  this._distanceToRadius = 1;
+
+  /**
+   * @const {number}
+   * @private
+   */
+  this._projRadius = 500;
+
   //endregion
 
   /**
-   * @type {{width: number, height: number, quality: number, location: {lat: number, lng: number}}}
+   * @type {{element: HTMLElement, width: number, height: number, quality: number, location: {lat: number, lng: number}, texturePlaceholderUrl: string, markerModel: {url: string, scale: {x: number, y: number, z: number}, rotation: {x: number, y: number, z: number}}}}
    * @private
    */
   this._options = options;
+
+  //region WebGL
 
   /**
    * @type {number}
@@ -58,6 +75,17 @@ gls.StreetviewControl = function(options) {
    */
   this._headingVector = new THREE.Euler();
 
+  /**
+   * @type {THREE.WebGLRenderer}
+   * @private
+   */
+  this._renderer = null;
+
+  /**
+   * @type {THREE.CSS3DRenderer}
+   * @private
+   */
+  this._cssRenderer = null;
 
   /**
    * @type {THREE.Scene}
@@ -81,13 +109,49 @@ gls.StreetviewControl = function(options) {
    * @type {THREE.VRControls}
    * @private
    */
-  this._controls = null;
+  this._vrControls = null;
 
   /**
    * @type {THREE.Mesh}
    * @private
    */
   this._projSphere = null;
+
+  /**
+   * @type {THREE.Mesh}
+   * @private
+   */
+  this._progBarContainer = null;
+
+  /**
+   * @type {THREE.Mesh}
+   * @private
+   */
+  this._progBar = null;
+
+  /**
+   * @type {Array.<THREE.Mesh>}
+   * @private
+   */
+  this._markers = [];
+
+  //endregion
+
+  //region Panorama
+
+  /**
+   * @type {GSVPANO.PanoLoader}
+   * @private
+   */
+  this._panoLoader = null;
+
+  /**
+   * @type {GSVPANO.PanoDepthLoader}
+   * @private
+   */
+  this._panoDepthLoader = null;
+
+  //endregion
 };
 
 //region helpers
@@ -152,6 +216,8 @@ gls.StreetviewControl.deltaAngleRad = function(a, b) {
 
 //endregion
 
+//region properties
+
 /**
  * @type {number}
  * @name gls.StreetviewControl#width
@@ -183,9 +249,14 @@ Object.defineProperties(gls.StreetviewControl.prototype, {
   }
 });
 
+//endregion
+
 gls.StreetviewControl.prototype.initWebGL = function() {
   var width = this['width'], height = this['height'];
   var placeholder = this._options['texturePlaceholderUrl'];
+
+  /** @type {HTMLElement} */
+  var element = this._options['element'];
 
   // create scenes
   this._scene = new THREE.Scene();
@@ -195,228 +266,150 @@ gls.StreetviewControl.prototype.initWebGL = function() {
   this._camera = new THREE.PerspectiveCamera(this._fov, width/height, this._near, this._far);
   this._camera.target = new THREE.Vector3(1, 0, 0);
 
-  this._controls  = new THREE.VRControls(this._camera);
+  this._vrControls  = new THREE.VRControls(this._camera);
 
   this._scene.add(this._camera);
 
   // Add projection sphere
-  this._projSphere = new THREE.Mesh(new THREE.SphereGeometry(500, 512, 256, 0, Math.PI * 2, 0, Math.PI), new THREE.MeshBasicMaterial({ 'map': THREE.ImageUtils.loadTexture(placeholder), 'side': THREE.DoubleSide}) );
+  this._projSphere = new THREE.Mesh(new THREE.SphereGeometry(this._projRadius, 512, 256, 0, Math.PI * 2, 0, Math.PI), new THREE.MeshBasicMaterial({ 'map': new THREE.TextureLoader().load(placeholder), 'side': THREE.DoubleSide}) );
   this._projSphere.geometry.dynamic = true;
   this._scene.add(this._projSphere);
 
-
-  // TODO: AICI
   // Add Progress Bar
-  progBarContainer = new THREE.Mesh( new THREE.BoxGeometry(1.2,0.2,0.1), new THREE.MeshBasicMaterial({color: 0xaaaaaa}));
-  progBarContainer.translateZ(-3);
-  this._camera.add( progBarContainer );
+  this._progBarContainer = new THREE.Mesh(new THREE.BoxGeometry(1.2,0.2,0.1), new THREE.MeshBasicMaterial({'color': 0xaaaaaa}));
+  this._progBarContainer.translateZ(-3);
+  this._camera.add(this._progBarContainer);
 
-  progBar = new THREE.Mesh( new THREE.BoxGeometry(1.0,0.1,0.1), new THREE.MeshBasicMaterial({color: 0x0000ff}));
-  progBar.translateZ(0.2);
-  progBarContainer.add(progBar);
+  this._progBar = new THREE.Mesh(new THREE.BoxGeometry(1.0,0.1,0.1), new THREE.MeshBasicMaterial({'color': 0x0000ff}));
+  this._progBar.translateZ(0.2);
+  this._progBarContainer.add(this._progBar);
 
   // Create render
-  try {
-    renderer = new THREE.WebGLRenderer({alpha:true});
-    /*renderer.setClearColor(0xECF8FF);
-     renderer.setPixelRatio(window.devicePixelRatio);
-     renderer.setSize(window.innerWidth, window.innerHeight);
-     renderer.domElement.style.position = 'absolute';
-     renderer.domElement.style.zIndex = 1;
-     renderer.domElement.style.top = 0;*/
+  this._renderer = new THREE.WebGLRenderer({'alpha':true});
+  this._renderer.setSize(width, height);
+  this._renderer.autoClearColor = false;
+  this._renderer.domElement.style.zIndex = 1;
 
-    cssRenderer = new THREE.CSS3DRenderer();
-    cssRenderer.setSize(window.innerWidth, window.innerHeight);
-    cssRenderer.domElement.style.position = 'absolute';
-    renderer.domElement.style.zIndex = 1;
-    cssRenderer.domElement.style.top = 0;
-  }
-  catch(e){
-    alert('This application needs WebGL enabled!');
-    return false;
-  }
+  // Overlap a CSS renderer over the GL renderer
+  this._cssRenderer = new THREE.CSS3DRenderer();
+  this._cssRenderer.setSize(width, height);
+  this._cssRenderer.domElement.style.position = 'absolute';
+  this._cssRenderer.domElement.style.top = 0;
 
-  renderer.autoClearColor = false;
-  renderer.setSize( WIDTH, HEIGHT );
+  element.appendChild(this._renderer.domElement);
+  element.appendChild(this._cssRenderer.domElement);
 
-  // effect = new THREE.VREffect( renderer );
-  // effect.setSize(WIDTH, HEIGHT );
-
-  //vrmgr = new WebVRManager(effect);
-
-  var viewer = $('#viewer');
-  viewer.append(renderer.domElement);
-  viewer.append(cssRenderer.domElement);
-
-  /*var light = new THREE.PointLight( 0xff0000, 1, 100 );
-   light.position.set( 50, 50, 50 );
-   this._scene.add( light );*/
-
-  var ambientLight = new THREE.AmbientLight( 0x444444 );
-  this._scene.add( ambientLight );
-
-  /*var lights = [];
-   lights[0] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-   lights[1] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-   lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-
-   lights[0].position.set( 0, 200, 0 );
-   lights[1].position.set( 100, 200, 100 );
-   lights[2].position.set( -100, -200, -100 );
-
-   this._scene.add( lights[0] );
-   this._scene.add( lights[1] );
-   this._scene.add( lights[2] );*/
-
+  // Lights
   var dirLight = new THREE.DirectionalLight(0xffffff, 1);
   dirLight.position.set(100, 100, 50);
   this._scene.add(dirLight);
+  this._scene.add(new THREE.AmbientLight(0x444444));
+};
 
-
-  var l = DEFAULT_LOCATION;
-  //var l1 = {lat: 42.338187, lng:-71.144345};
-  var l1 = {lat: 42.338464, lng:-71.144399};
-  //var d = Math.sqrt(Math.pow(l1.lat - l.lat, 2) + Math.pow(l1.lng - l.lng, 2));
-
-  var g = new Geolocation(l.lat, l.lng, 0);
-  var g1 = new Geolocation(l1.lat, l1.lng, 0);
-  var d = g.distanceTo(g1);
-
-  var dlat = g.distanceTo(new Geolocation(g.lat+1, g.lng));
-  var dlng = g.distanceTo(new Geolocation(g.lat, g.lng+1));
-
-  var dist2Rad = 1;
-  console.log(d * dist2Rad);
-  var z = - dist2Rad * dlat * (g1.lat - g.lat);
-  var x = dist2Rad * dlng * (g1.lng - g.lng);
-
-
-  /*var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, opacity: 0.5 } ) );
-   object.position.x = x;
-   object.position.y = 0;
-   object.position.z = z;
-   object.scale.x = 1;
-   object.scale.y = 1;
-   object.scale.z = 1;
-   object.rotation.x = Math.random() * 2 * Math.PI;
-   object.rotation.y = Math.random() * 2 * Math.PI;
-   object.rotation.z = Math.random() * 2 * Math.PI;
-   this._scene.add( object );
-   objects.push( object );*/
-
-  //var loader = new THREE.JSONLoader();
-  var loader = new THREE.STLLoader();
-
+gls.StreetviewControl.prototype.initPano = function() {
   var self = this;
-  var createMesh = function( geometry )
-  {
-    geometry.computeVertexNormals();
-    geometry.mergeVertices();
-    //var zmesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial() );
-    //var zmesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, opacity: 0.5 } ) );
-    //var zmesh = new THREE.Mesh( geometry, new THREE.MeshPhongMaterial( { color: 0xff0000, opacity: 0.9, specular: 0x009900, shininess: 0, shading: THREE.FlatShading } ) );
-    var zmesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: 0xe51c23, opacity: 1, alphaTest: 0, side: THREE.FrontSide} ) );
+  this._panoLoader = new GSVPANO.PanoLoader();
+  this._panoDepthLoader = new GSVPANO.PanoDepthLoader();
+  this._panoLoader.setZoom(this._options['quality']);
 
-    //zmesh.position.set( x, 0, z );
-    zmesh.position.x = x;
-    zmesh.position.y = 0;
-    zmesh.position.z = z;
-    zmesh.scale.x = 0.05;
-    zmesh.scale.y = 0.05;
-    zmesh.scale.z = 0.05;
-
-    zmesh.rotation.x = Math.PI / 2;
-    // zmesh.scale.set( 3, 3, 3 );
-    //zmesh.overdraw = true;
-    self._scene.add( zmesh );
-    objects.push(zmesh);
+  this._panoLoader.onProgress = function( progress ) {
+    if (progress > 0) {
+      self._progBar.visible = true;
+      self._progBar.scale = new THREE.Vector3(progress/100.0,1,1);
+    }
+  };
+  this._panoLoader.onPanoramaData = function(result) {
+    self._progBarContainer.visible = true;
+    self._progBar.visible = false;
   };
 
-  //loader.load( "js/stickfigure2.js", createMesh );
-  loader.load( "js/Raindrop.stl", createMesh.bind(this) );
+  this._panoLoader.onNoPanoramaData = function( status ) {
+    //alert('no data!');
+  };
 
-  /*var material = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xff0000 });
-   //var material = new THREE.MeshLambertMaterial( { color: 0xe51c23, opacity: 1, alphaTest: 0, side: THREE.FrontSide} )
-   var geometry = new THREE.PlaneGeometry(50, 50, 50, 50);
-   var planeMesh= new THREE.Mesh( geometry, material );
+  this._panoLoader.onPanoramaLoad = function() {
+    var a = THREE.Math.degToRad(90 - self._panoLoader.heading);
+    self._projSphere.quaternion.setFromEuler(new THREE.Euler(0, a, 0, 'YZX'));
 
-   planeMesh.position.x = x;
-   planeMesh.position.y = 0;
-   planeMesh.position.z = z;
-   planeMesh.scale.x = 1;
-   planeMesh.scale.y = 1;
-   planeMesh.scale.z = 1;
+    self._projSphere.material.wirewframe = false;
+    self._projSphere.material.map.needsUpdate = true;
+    self._projSphere.material.map = new THREE.Texture( this.canvas );
+    self._projSphere.material.map.needsUpdate = true;
 
-   planeMesh.rotation.x = Math.PI / 3;
-   planeMesh.rotation.y = Math.PI / 3;
-   planeMesh.rotation.z = Math.PI / 3;*/
+    self._progBarContainer.visible = false;
+    self._progBar.visible = false;
+  };
+};
 
-// add it to the WebGL scene
-  /*this._scene.add(planeMesh);
-   objects.push(planeMesh);*/
+gls.StreetviewControl.prototype.loop = function() {
+  window.requestAnimationFrame(gls.StreetviewControl.prototype.loop.bind(this));
 
-  /*var element = document.createElement( 'img' );
-   element.src = 'isocreator_scr2.jpg';
-   // create the object3d for this element
-   var cssObject = new THREE.CSS3DObject( element );
-   cssObject.scale.x = 0.1;
-   cssObject.scale.y = 0.1;
-   cssObject.scale.z = 0.1;
-   cssObject.position.x = x;
-   cssObject.position.y = 20;
-   cssObject.position.z = z;
-   // add it to the css scene
-   this._cssScene.add(cssObject);*/
-  /*objects.push(cssObject);*/
+  // Compute heading
+  this._headingVector.setFromQuaternion(this._camera.quaternion, 'YZX');
+  this._currHeading = gls.StreetviewControl.angleRangeDeg(THREE.Math.radToDeg(-this._headingVector.y));
 
-  /*var html = [
-   '<div style="width:' + 1280 + 'px; height:' + 1024 + 'px;">',
-   '<iframe src="' + 'https://www.twinfog.com' + '" width="' + 1280 + '" height="' + 1024 + '">',
-   '</iframe>',
-   '</div>'
-   ].join('\n');
-   var div = document.createElement('div');
-   $(div).html(html);
-   var cssObject = new THREE.CSS3DObject(div);
-   cssObject.position.x = 0;
-   cssObject.position.y = 0;
-   cssObject.position.z = -200;
-   /!*cssObject.rotation.x = Math.PI / 3;
-   cssObject.rotation.y = Math.PI / 3;
-   cssObject.rotation.z = Math.PI / 3;*!/
-   cssObject.scale.x = 0.1;
-   cssObject.scale.y = 0.1;
-   cssObject.scale.z = 0.1;
-   this._cssScene.add(cssObject);*/
+  this._vrControls.update();
 
-  /*var rendererCSS	= new THREE.CSS3DRenderer();
-   rendererCSS.setSize( window.innerWidth, window.innerHeight );
-   rendererCSS.domElement.style.position	= 'absolute';
-   rendererCSS.domElement.style.top	= 0;
-   rendererCSS.domElement.style.margin	= 0;
-   rendererCSS.domElement.style.padding	= 0;
-   document.body.appendChild( rendererCSS.domElement );*/
+  // render
+  this._renderer.render(this._scene, this._camera);
+  this._cssRenderer.render(this._cssScene, this._camera);
+};
 
-  //THREE.WindowResize.bind(rendererCSS, world.this._camera().get(0));
+gls.StreetviewControl.prototype.addMarker = function(there) {
+  var here = this._options['location'];
 
-  /*for ( var i = 0; i < 10; i ++ ) {
+  /*var dist = u.Geolocation.distanceBetween(here, there);*/
 
-   var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, opacity: 0.5 } ) );
-   object.position.x = Math.random() * 800 - 400;
-   object.position.y = Math.random() * 800 - 400;
-   object.position.z = Math.random() * 800 - 400;
+  var dlat = u.Geolocation.distanceBetween(here, {'lat':here['lat'] + 1, 'lng': here['lng']});
+  var dlng = u.Geolocation.distanceBetween(here, {'lat':here['lat'], 'lng': here['lng'] + 1});
 
-   object.scale.x = Math.random() * 2 + 1;
-   object.scale.y = Math.random() * 2 + 1;
-   object.scale.z = Math.random() * 2 + 1;
+  var z = - this._distanceToRadius * dlat * (there['lat'] - here['lat']);
+  var x = this._distanceToRadius * dlng * (there['lng'] - here['lng']);
 
-   object.rotation.x = Math.random() * 2 * Math.PI;
-   object.rotation.y = Math.random() * 2 * Math.PI;
-   object.rotation.z = Math.random() * 2 * Math.PI;
+  var self = this;
 
-   this._scene.add( object );
+  /**
+   * @type {{url: string, scale: {x: number, y: number, z: number}, rotation: {x: number, y: number, z: number}}}
+   */
+  var markerModel = this._options['markerModel'];
 
-   objects.push( object );
+  var addMarker = function(geometry) {
+    geometry.computeVertexNormals();
+    geometry.mergeVertices();
 
-   }*/
-}
+    var marker = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({ 'color': 0xe51c23, 'opacity': 1, 'alphaTest': 0, 'side': THREE.FrontSide}));
+
+    marker.position.x = x;
+    marker.position.y = 0;
+    marker.position.z = z;
+    marker.scale.x = markerModel['scale']['x'];
+    marker.scale.y = markerModel['scale']['y'];
+    marker.scale.z = markerModel['scale']['z'];
+
+    marker.rotation.x = markerModel['rotation']['x'];
+    marker.rotation.y = markerModel['rotation']['y'];
+    marker.rotation.z = markerModel['rotation']['z'];
+    self._scene.add(marker);
+    self._markers.push(marker);
+  };
+
+  var markerUrl = markerModel['url'];
+  var loader;
+  if (markerUrl.lastIndexOf('.stl') == markerUrl.length - 4) {
+    loader = new THREE.STLLoader();
+  } else {
+    loader = new THREE.JSONLoader();
+  }
+
+  loader.load(markerUrl, addMarker);
+};
+
+gls.StreetviewControl.prototype.run = function() {
+  this.initWebGL();
+  this.initPano();
+
+  // Load default location
+  this._panoLoader.load(new google.maps.LatLng(this._options['location']['lat'], this._options['location']['lng']));
+
+  this.loop();
+};
