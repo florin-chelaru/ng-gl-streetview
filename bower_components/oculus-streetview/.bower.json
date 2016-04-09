@@ -1,0 +1,12 @@
+{
+  "name": "oculus-streetview",
+  "homepage": "https://github.com/troffmo5/OculusStreetView",
+  "_release": "19e8b5eff1",
+  "_resolution": {
+    "type": "commit",
+    "commit": "19e8b5eff1953700a1cb0ae234341c6d84e9f338"
+  },
+  "_source": "git://github.com/troffmo5/OculusStreetView.git",
+  "_target": "19e8b5eff1953700a1cb0ae234341c6d84e9f338",
+  "_originalSource": "git://github.com/troffmo5/OculusStreetView.git"
+}

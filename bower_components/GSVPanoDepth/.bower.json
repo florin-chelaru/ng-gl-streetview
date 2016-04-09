@@ -1,0 +1,12 @@
+{
+  "name": "GSVPanoDepth",
+  "homepage": "https://github.com/proog128/GSVPanoDepth.js",
+  "_release": "1a9dffb50a",
+  "_resolution": {
+    "type": "commit",
+    "commit": "1a9dffb50a8b6d13bf98862b3cc32b51d2529f05"
+  },
+  "_source": "git://github.com/proog128/GSVPanoDepth.js.git",
+  "_target": "1a9dffb50a8b6d13bf98862b3cc32b51d2529f05",
+  "_originalSource": "git://github.com/proog128/GSVPanoDepth.js.git"
+}

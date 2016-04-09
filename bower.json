@@ -1,0 +1,39 @@
+{
+  "name": "ng-gl-streetview",
+  "version": "0.0.1",
+  "description": "Angular WebGL StreetView",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [],
+  "authors": [
+    "Florin Chelaru (florin.chelaru@gmail.com)",
+    "Corneliu Serediuc (corneliu.serediuc@gmail.com)"
+  ],
+  "license": "MIT",
+  "homepage": "http://www.twinfog.com",
+  "private": true,
+  "dependencies": {
+    "jquery": "~2.2.0",
+    "angular": "~1.5.0",
+
+    "GSVPanoDepth": "git://github.com/proog128/GSVPanoDepth.js.git#1a9dffb50a8b6d13bf98862b3cc32b51d2529f05",
+    "threejs": "git://github.com/mrdoob/three.js.git#7492dd85f786b0030c76ffc5eb475f83663db3af",
+    "webvr-polyfill": "git://github.com/cvan/webvr-polyfill.git#a89453058fb13b89b4af28f76f015837ff33b673",
+    "oculus-streetview": "git://github.com/troffmo5/OculusStreetView.git#19e8b5eff1953700a1cb0ae234341c6d84e9f338",
+
+    "ng-utils": "git://github.com/florin-chelaru/ng-utils.git",
+    "utils.js": "git://github.com/florin-chelaru/utils.js.git"
+  },
+  "devDependencies": {
+    "google-closure-library": "git://github.com/google/closure-library.git#56712dfced32778fc8435a4bea6a2e422e5f03c1",
+    "closure-compiler": "0.2.7",
+    "qunit": "1.19.0"
+  },
+  "ignore": [
+    "*.md",
+    "/test",
+    "/bower_components",
+    "/.idea"
+  ]
+}

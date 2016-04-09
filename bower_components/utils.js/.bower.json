@@ -1,0 +1,39 @@
+{
+  "name": "utils.js",
+  "authors": [
+    "Florin Chelaru <florinc@mit.edu>"
+  ],
+  "description": "Utility methods and classes for JavaScript",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "utils",
+    "reflection",
+    "exception",
+    "promise polyfill"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "google-closure-library": "git://github.com/google/closure-library.git#56712dfced32778fc8435a4bea6a2e422e5f03c1",
+    "qunit": "1.19.0",
+    "closure-compiler": "0.2.7",
+    "d3": "3.5.6"
+  },
+  "homepage": "https://github.com/florin-chelaru/utils.js",
+  "_release": "dfcfac9df6",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "dfcfac9df6176152beb170ade7b050388f4f22bc"
+  },
+  "_source": "git://github.com/florin-chelaru/utils.js.git",
+  "_target": "*",
+  "_originalSource": "git://github.com/florin-chelaru/utils.js.git"
+}

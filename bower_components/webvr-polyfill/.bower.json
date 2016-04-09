@@ -1,0 +1,12 @@
+{
+  "name": "webvr-polyfill",
+  "homepage": "https://github.com/cvan/webvr-polyfill",
+  "_release": "a89453058f",
+  "_resolution": {
+    "type": "commit",
+    "commit": "a89453058fb13b89b4af28f76f015837ff33b673"
+  },
+  "_source": "git://github.com/cvan/webvr-polyfill.git",
+  "_target": "a89453058fb13b89b4af28f76f015837ff33b673",
+  "_originalSource": "git://github.com/cvan/webvr-polyfill.git"
+}

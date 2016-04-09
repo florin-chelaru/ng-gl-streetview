@@ -1,0 +1,13 @@
+{
+  "name": "jquery-base64",
+  "homepage": "https://github.com/carlo/jquery-base64",
+  "_release": "e251767083",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "e2517670836e8d9b548e66ba26baa7d29416e2cf"
+  },
+  "_source": "git://github.com/carlo/jquery-base64.git",
+  "_target": "*",
+  "_originalSource": "git://github.com/carlo/jquery-base64.git"
+}
