@@ -13,3 +13,6 @@ u.log.VERBOSE = 'info';
 
 gls.test = angular.module('ng-gl-streetview-test', ['gls']);
 
+$(function() {
+  var ctrl = new gls.StreetviewControl({width: 100, height: 100, quality: 3, location: {lat:42.337692, lng:-71.144215}, texturePlaceholderUrl: 'placeholder.png'});
+});
